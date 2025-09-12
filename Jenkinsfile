@@ -30,11 +30,16 @@ pipeline {
 
         stage('3. Push to GCP Artifact Registry') {
             steps {
-                withCredentials([googleServiceAccount(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
+                withCredentials([string(credentialsId: 'gcp-service-account-json', variable: 'GCP_KEY')]) {
                     script {
-                        sh "gcloud auth activate-service-account --key-file=${GCP_KEY_FILE}"
-                        sh "gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet"
-                        sh "docker push ${IMAGE_URI}"
+                        // Write the key to a temporary file
+                        sh '''
+                            echo $GCP_KEY > /tmp/gcp-key.json
+                            gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+                            gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+                            docker push ${IMAGE_URI}
+                            rm /tmp/gcp-key.json
+                        '''
                         echo "✅ Image pushed successfully to Artifact Registry."
                     }
                 }
@@ -43,18 +48,19 @@ pipeline {
 
         stage('4. Deploy to GCP Cloud Run') {
             steps {
-                withCredentials([googleServiceAccount(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
+                withCredentials([string(credentialsId: 'gcp-service-account-json', variable: 'GCP_KEY')]) {
                     script {
-                        sh "gcloud auth activate-service-account --key-file=${GCP_KEY_FILE}"
-
-                        sh """
-                        gcloud run deploy ${CLOUD_RUN_SERVICE} \
-                          --platform managed \
-                          --allow-unauthenticated \
-                          --region ${REGION} \
-                          --image ${IMAGE_URI} \
-                          --quiet
-                        """
+                        sh '''
+                            echo $GCP_KEY > /tmp/gcp-key.json
+                            gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+                            gcloud run deploy ${CLOUD_RUN_SERVICE} \
+                              --platform managed \
+                              --allow-unauthenticated \
+                              --region ${REGION} \
+                              --image ${IMAGE_URI} \
+                              --quiet
+                            rm /tmp/gcp-key.json
+                        '''
                         echo "🚀 App successfully deployed to Cloud Run!"
                     }
                 }
