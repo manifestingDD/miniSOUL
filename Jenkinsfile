@@ -31,7 +31,7 @@ pipeline {
         stage('3. Push to GCP Artifact Registry') {
             steps {
                 // Securely load the GCP key file
-                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
+                withCredentials([googleServiceAccount(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
                     script {
                         // Authenticate gcloud with the service account key
                         sh "gcloud auth activate-service-account --key-file=\${GCP_KEY_FILE}"
@@ -50,7 +50,7 @@ pipeline {
         stage('4. Deploy to GCP Cloud Run') {
             steps {
                 // Re-authenticate to ensure this stage is self-contained
-                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
+                withCredentials([googleServiceAccount(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
                     script {
                         sh "gcloud auth activate-service-account --key-file=\${GCP_KEY_FILE}"
 
