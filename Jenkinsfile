@@ -32,9 +32,10 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'gcp-service-account-json', variable: 'GCP_KEY')]) {
                     script {
-                        // Write the key to a temporary file
+                        // Write the key to a temporary file using writeFile
+                        writeFile file: '/tmp/gcp-key.json', text: GCP_KEY
+                        
                         sh '''
-                            echo $GCP_KEY > /tmp/gcp-key.json
                             gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
                             gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
                             docker push ${IMAGE_URI}
@@ -50,8 +51,10 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'gcp-service-account-json', variable: 'GCP_KEY')]) {
                     script {
+                        // Write the key to a temporary file using writeFile
+                        writeFile file: '/tmp/gcp-key.json', text: GCP_KEY
+                        
                         sh '''
-                            echo $GCP_KEY > /tmp/gcp-key.json
                             gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
                             gcloud run deploy ${CLOUD_RUN_SERVICE} \
                               --platform managed \
