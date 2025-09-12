@@ -11,10 +11,10 @@ def show_intro():
     with col1:
         st.write("")
         st.write('''
-                Welcome to SOUL - Simulation and Optimization Unified Lab! SOUL is a platform developed by CIMA at Disney Experiences that empowers the marketing planners to turn marketing effectiveness insights into actionable media planning solution.  
-                
+                Welcome to SOUL - Simulation and Optimization Unified Lab! 
+
                 Media spend planning is an art of tuning and balancing. 
-                Equipped with the latest media mix model (MMM) results and our in-house optimization algorithms, 
+                Equipped with the latest media mix model (MMM) results and greedy optimization algorithm, 
                 this is a space we can improvise and rehearse, over and over again until we find the perfect harmony across media channels. 
                 Take a seat and let's get started! 
                 ''')
