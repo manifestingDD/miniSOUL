@@ -30,15 +30,10 @@ pipeline {
 
         stage('3. Push to GCP Artifact Registry') {
             steps {
-                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
+                withCredentials([googleServiceAccount(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
                     script {
-                        // Authenticate gcloud with the service account key
                         sh "gcloud auth activate-service-account --key-file=${GCP_KEY_FILE}"
-                        
-                        // Configure Docker to use gcloud for authentication
                         sh "gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet"
-                        
-                        // Push the image
                         sh "docker push ${IMAGE_URI}"
                         echo "✅ Image pushed successfully to Artifact Registry."
                     }
@@ -48,7 +43,7 @@ pipeline {
 
         stage('4. Deploy to GCP Cloud Run') {
             steps {
-                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
+                withCredentials([googleServiceAccount(credentialsId: 'gcp-service-account-key', variable: 'GCP_KEY_FILE')]) {
                     script {
                         sh "gcloud auth activate-service-account --key-file=${GCP_KEY_FILE}"
 
