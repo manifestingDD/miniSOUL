@@ -6,7 +6,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Build-blue.svg)](https://www.docker.com/)
 [![CI/CD](https://img.shields.io/badge/CI/CD-Jenkins%20%7C%20GCP-orange.svg)](https://www.jenkins.io/)
 
-**Live Demo:** [**miniSOUL Application**](http://YOUR_CLOUD_RUN_URL_HERE) 🚀
+**Live Demo:** [**miniSOUL Application**](https://minisoul-app-354747708193.us-central1.run.app/) 🚀
 
 ## 📖 Introduction
 
@@ -22,11 +22,20 @@ This multi-page application provides three core functionalities:
 * **Budget Optimizing:** User set a target KPI goal, and the application's optimization engine will find the minimum budget required to achieve it, reallocating spend across channels and months.
 * **Attendee Maximizing:** User provide an initial budget plan, and the optimizer will reallocate spending to achieve the maximum possible number of attendees or other target KPIs using the same total budget as the initial plan.
 
-## ✨ Optimization Algorithm
+## 🗻  Optimization Algorithm
+
 The MMM set up and media planning process in practice brings 3 major challenges for planning and optimizing:
 * **Non-linear mapping function:** The adstock and saturation effect of media spend means complex non-linear mapping from week 1's spend on media channel $X$ to incremental return on week 7, bringing challenge to the optimizer. 
 * **Interdependent choice variables:** As the saturation effect is applied to cumulative media adstock, the return of week 3's investment is dependent on week 1 and week 2's investment.  
 * **Unmatched granularity at modeling and planning stage:** Stakeholders might ask for more granualar ROI information when fitting the MMM model but more high level recommendation when making the actual plan. For example, a channel could be separated into 3 subchannels by touchpoint phase {Inspire, Activate, Transact} when fitting the MMM, but the 3 sub-channels will be aggregated together during planning. This brings the challenge for an arithmatic optimization solution as we lack the adstock and statuarion parameters for the aggregated channel. 
+
+To address these challenges, we developed an in-house optimization algorithm that combines exhaustive simulation with an efficient greedy search. The major steps are: 
+* **1.Pre-computation via Simulation:**  For each media channel, we first simulate 300 different spending levels (from 0% to 300% of modeling spend as baseline). At each level, we calculate the resulting incremental return and, most importantly, the Marginal Cost Per Incremental Target (MCPT). This process creates a detailed, 3000-row lookup table for each channel that acts as a cost-benefit curve, showing us exactly how the efficiency of a channel changes as we invest more into it.
+* **2. Handling Adstock & Timing:** We recognize that a dollar spent in March has a different ROI than a dollar spent in January for a Q1 target period. We capture this by applying an "estimated timing vector" (derived from the model's adstock parameters) to our simulation table. This effectively treats "Media X in January" and "Media X in February" as distinct investment options with their own unique cost-benefit curves.
+* **3. The Greedy Algorithm:** With the simulation complete, the optimizer iteratively allocates the budget one small piece at a time. In each step, it asks a simple question: "Where can I spend the next dollar to get the best possible return?" It finds the media channel and month combination with the lowest current MCPT, allocates a small amount of budget there untill reaching the media with 2nd lowest MCPT, and update the MCPT tracker. This process repeats until the budget is exhausted or the goal is met. 
+
+This simulation-first approach allows the greedy algorithm to navigate the complex, non-linear search space effectively and find a near-optimal solution quickly. The key proposition for this method is that by general assumptions of media mix model, the impact of MMM estimates are locally linear -- media channels that has over +/- 50% spending changes compared to the modeling period are encouraged to be re-estimated due to the media saturation effect. This proposition gurantees the finite scenarios that need to be simulated. Although we simulate the spend scenario from 0% to 300% of original spend, we encourage the users to set the constraint as (50%, 150%) for each media channel. 
+
 
 
 ## 🛠️ Tech Stack & CI/CD Architecture
@@ -49,43 +58,7 @@ This project utilizes a modern stack for both the application and its deployment
 
 The CI/CD pipeline is fully automated. A `git push` to the `main` branch on GitHub triggers a webhook that starts a build job on a Jenkins server hosted on a GCP Compute Engine VM.
 
-+------------------------+
-|   Author Pushes Code   |
-+------------------------+
-           |
-           v
-+------------------------+
-|         GitHub         |
-+------------------------+
-           |
-           | (Webhook Trigger)
-           v
-+------------------------+
-|   Jenkins (GCP VM)     |
-+------------------------+
-           |
-           | (Builds Container)
-           v
-+------------------------+
-|         Docker         |
-+------------------------+
-           |
-           | (Pushes Image)
-           v
-+------------------------+
-| GCP Artifact Registry  |
-+------------------------+
-           |
-           | (Deploys New Version)
-           v
-+------------------------+
-|     GCP Cloud Run      |
-+------------------------+
-           |
-           v
-+------------------------+
-|  User Accesses App     |
-+------------------------+
+[Author Pushes Code] --> [GitHub] --(Webhook)--> [Jenkins on GCP VM] --(Builds)--> [Docker Image] --(Pushes)--> [Artifact Registry] --(Deploys)--> [Cloud Run] <-- [User Accesses App]
 
 
 The Jenkins pipeline executes the following stages:

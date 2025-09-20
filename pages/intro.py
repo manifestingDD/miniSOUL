@@ -11,7 +11,7 @@ def show_intro():
     with col1:
         st.write("")
         st.write('''
-                Welcome to miniSoul. This is a demo of our in house app SOUL - Simulation and Optimization Unified Lab.
+                Welcome to miniSoul. This is a demo of my developed in-house app SOUL - Simulation and Optimization Unified Lab.
 
                 Media spend planning is an art of tuning and balancing. 
                 Equipped with the latest media mix model (MMM) results and greedy optimization algorithm, 
